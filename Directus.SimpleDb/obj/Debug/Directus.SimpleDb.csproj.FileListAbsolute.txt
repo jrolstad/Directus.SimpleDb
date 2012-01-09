@@ -1,0 +1,9 @@
+C:\work\git\Directus\Directus.SimpleDb\bin\Debug\Directus.SimpleDb.dll
+C:\work\git\Directus\Directus.SimpleDb\bin\Debug\Directus.SimpleDb.pdb
+C:\work\git\Directus\Directus.SimpleDb\bin\Debug\AWSSDK.dll
+C:\work\git\Directus\Directus.SimpleDb\bin\Debug\log4net.dll
+C:\work\git\Directus\Directus.SimpleDb\bin\Debug\Rolstad.Extensions.dll
+C:\work\git\Directus\Directus.SimpleDb\bin\Debug\log4net.xml
+C:\work\git\Directus\Directus.SimpleDb\obj\Debug\ResolveAssemblyReference.cache
+C:\work\git\Directus\Directus.SimpleDb\obj\Debug\Directus.SimpleDb.dll
+C:\work\git\Directus\Directus.SimpleDb\obj\Debug\Directus.SimpleDb.pdb
