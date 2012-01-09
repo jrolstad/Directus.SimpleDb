@@ -58,6 +58,8 @@
     <Compile Include="Factories\BatchPutAttributeRequestFactory.cs" />
     <Compile Include="Factories\SelectRequestFactory.cs" />
     <Compile Include="Attributes\DomainNameAttribute.cs" />
+    <Compile Include="Mappers\EntityMap.cs" />
+    <Compile Include="Mappers\EntityMapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Providers\SimpleDBProvider.cs" />
   </ItemGroup>

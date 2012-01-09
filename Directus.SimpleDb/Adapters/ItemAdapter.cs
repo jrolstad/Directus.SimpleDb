@@ -1,59 +1,71 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using Amazon.SimpleDB.Model;
-using Directus.SimpleDb.Attributes;
+using Directus.SimpleDb.Mappers;
 using Rolstad.Extensions;
 
 namespace Directus.SimpleDb.Adapters
 {
-   
-    public class ItemAdapter<T> where T : new()
+    /// <summary>
+    /// Converts between POCOs and Amazon SimpleDB Item instances
+    /// </summary>
+    public class ItemAdapter
     {
-        private PropertyInfo[] _propertiesToFill;
-        private PropertyInfo _keyProperty;
+        private readonly EntityMapper _entityMapper;
 
-        public ItemAdapter()
+        /// <summary>
+        /// Constructor with dependencies
+        /// </summary>
+        /// <param name="entityMapper">Mapper for creating the AWS to POCO map</param>
+        public ItemAdapter(EntityMapper entityMapper)
         {
-            DeterminePropertiesToFill();
+            _entityMapper = entityMapper;
         }
 
-        private void DeterminePropertiesToFill()
-        {
-            var properties = typeof (T).GetProperties();
-
-            _propertiesToFill = properties
-                .Where(p => p.GetCustomAttributes(typeof (DoNotPersistAttribute), true).Length == 0)
-                .Where(p=>p.CanWrite)
-                .ToArray();
-
-            var keyProperties = properties
-                .Where(p => p.GetCustomAttributes(typeof (KeyAttribute), true).Length > 0)
-                .ToArray();
-
-            if (keyProperties.Length == 0)
-                throw new ApplicationException("Key property not found for type {0}".StringFormat(typeof (T).FullName));
-            if (keyProperties.Length > 1)
-                throw new ApplicationException("More than 1 Key property found for type {0}".StringFormat(typeof (T).FullName));
-
-            _keyProperty = keyProperties.Single();
-        }
-
-        public T Convert(Item item )
+        /// <summary>
+        /// Converts an an Amazon SimpleDB Item into an instance to type T
+        /// </summary>
+        /// <typeparam name="T">Type to convert to</typeparam>
+        /// <param name="item">SimpleDB Item to read from</param>
+        /// <returns></returns>
+        public virtual T Convert<T>(Item item ) where T : new()
         {
             var instance = new T();
 
-            _keyProperty.SetValue(instance, System.Convert.ChangeType(item.Name,_keyProperty.PropertyType), null);
+            // Obtain the entity map to work with
+            var map = _entityMapper.CreateMap<T>();
 
-            _propertiesToFill.Each(p => item.Attribute
+            // Set the properties
+            SetProperty(item.Name,instance,map.KeyProperty);
+            map.PersistableProperties.Each(p => item.Attribute
                                             .Where(a => a.Name == p.Name)
-                                            .Each(a => p.SetValue(instance, System.Convert.ChangeType(a.Value, p.PropertyType),null))
+                                            .Each(a => SetProperty(a.Value, instance, p))
                                             );
 
 
             return instance;
+        }
+
+        /// <summary>
+        /// Given a property and instance, sets the value on it
+        /// </summary>
+        /// <typeparam name="T">Type of the instance where the property resides</typeparam>
+        /// <param name="value">Value to set on the property</param>
+        /// <param name="instance">Instance to set the value on</param>
+        /// <param name="property">Property to set</param>
+        internal void SetProperty<T>(string value, T instance, PropertyInfo property )
+        {
+            try
+            {
+                property.SetValue(instance, System.Convert.ChangeType(value, property.PropertyType), null);
+            }
+            catch (Exception exception)
+            {
+                var message = "Unable to set property '{0}' to '{1}'".StringFormat(property.Name, value);
+                throw new ApplicationException(message,exception);
+            }
+           
         }
     }
 }
