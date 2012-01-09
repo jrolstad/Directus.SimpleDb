@@ -10,7 +10,7 @@ using Rolstad.Extensions;
 
 namespace Directus.SimpleDb.Providers
 {
-    public class SimpleDBProvider<T,I>
+    public class SimpleDBProvider<T,I> where T : new()
     {
         private readonly BatchDeleteAttributeRequestFactory _deleteFactory;
         private readonly BatchPutAttributeRequestFactory<T> _putFactory;

@@ -52,7 +52,7 @@
   <ItemGroup>
     <Compile Include="Adapters\DeleteableItemAdapter.cs" />
     <Compile Include="Adapters\ItemAdapter.cs" />
-    <Compile Include="Adapters\ReplaceableitemAdapter.cs" />
+    <Compile Include="Adapters\ReplaceableItemAdapter.cs" />
     <Compile Include="Attributes\DoNotPersistAttribute.cs" />
     <Compile Include="Factories\BatchDeleteAttributeRequestFactory.cs" />
     <Compile Include="Factories\BatchPutAttributeRequestFactory.cs" />
