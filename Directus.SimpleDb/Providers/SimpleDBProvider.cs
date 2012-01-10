@@ -5,6 +5,7 @@ using Amazon.SimpleDB.Model;
 using Directus.SimpleDb.Adapters;
 using Directus.SimpleDb.Attributes;
 using Directus.SimpleDb.Factories;
+using Directus.SimpleDb.Mappers;
 
 namespace Directus.SimpleDb.Providers
 {
@@ -24,6 +25,29 @@ namespace Directus.SimpleDb.Providers
         private readonly string _domainName;
 
         /// <summary>
+        /// Default constructor that determines the domain name
+        /// </summary>
+        internal SimpleDBProvider()
+        {
+            _domainName = GetDomainNameForType();
+        }
+
+        /// <summary>
+        /// Constructor with only the Amazon credentials
+        /// </summary>
+        /// <param name="amazonAccessKey"></param>
+        /// <param name="amazonSecretKey"></param>
+        public SimpleDBProvider(string amazonAccessKey, string amazonSecretKey):this()
+        {
+            var entityMapper = new EntityMapper();
+            _deleteFactory = new BatchDeleteAttributeRequestFactory(new DeleteableItemAdapter());
+            _putFactory = new BatchPutAttributeRequestFactory(new ReplaceableItemAdapter(entityMapper));
+            _selectRequestFactory = new SelectRequestFactory();
+            _itemAdapter = new ItemAdapter(entityMapper);
+            _simpleDB = new AmazonSimpleDBClient(amazonAccessKey,amazonSecretKey);
+        }
+
+        /// <summary>
         /// Constructor with all dependencies injected
         /// </summary>
         /// <param name="deleteFactory">Factory for creating delete requests</param>
@@ -31,14 +55,16 @@ namespace Directus.SimpleDb.Providers
         /// <param name="selectRequestFactory">Factory for creating select requests</param>
         /// <param name="itemAdapter">Factory for converting select response items to the given POCO of type T</param>
         /// <param name="simpleDb">Amazon SimpleDB instance</param>
-        public SimpleDBProvider(BatchDeleteAttributeRequestFactory deleteFactory, BatchPutAttributeRequestFactory putFactory, SelectRequestFactory selectRequestFactory, ItemAdapter itemAdapter, AmazonSimpleDB simpleDb)
+        public SimpleDBProvider(BatchDeleteAttributeRequestFactory deleteFactory, 
+            BatchPutAttributeRequestFactory putFactory, 
+            SelectRequestFactory selectRequestFactory, 
+            ItemAdapter itemAdapter, 
+            AmazonSimpleDB simpleDb):this()
         {
             _deleteFactory = deleteFactory;
             _putFactory = putFactory;
             _selectRequestFactory = selectRequestFactory;
             _itemAdapter = itemAdapter;
-
-            _domainName = GetDomainNameForType();
             _simpleDB = simpleDb;
         }
 

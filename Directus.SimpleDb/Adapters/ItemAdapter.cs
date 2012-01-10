@@ -58,7 +58,7 @@ namespace Directus.SimpleDb.Adapters
         {
             try
             {
-                property.SetValue(instance, System.Convert.ChangeType(value, property.PropertyType), null);
+                property.SetValue(instance, To(value, property.PropertyType), null);
             }
             catch (Exception exception)
             {
@@ -66,6 +66,37 @@ namespace Directus.SimpleDb.Adapters
                 throw new ApplicationException(message,exception);
             }
            
+        }
+
+        /// <summary>
+        /// Converts a string type to the defined type.  If <see langword="null"/> or empty, returns that type's default
+        /// </summary>
+        /// <typeparam name="T">Type to convert to</typeparam>
+        /// <param name="value">Value to convert</param>
+        /// <returns></returns>
+        public static object To(string value, Type type)
+        {
+            var result = new object();
+
+            if (!value.IsEmpty())
+            {
+                // Get the underlying type for Nullable types
+                // Since when trying to run Convert.ChangeType(value,Nullable<>) that will blow...
+                // so instead, we get the underlying type
+                if (type.IsGenericType
+                    && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    var t = type.GetGenericArguments()[0];
+                    result = System.Convert.ChangeType(value, t);
+                }
+                // Not a Nullable, get the type
+                else
+                {
+                    result = System.Convert.ChangeType(value, type);
+                }
+            }
+
+            return result;
         }
     }
 }
