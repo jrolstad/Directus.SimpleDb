@@ -92,7 +92,7 @@ namespace Directus.SimpleDb.Providers
             var itemsInDomain = QueryDomain(identifier.ToString());
 
             // Convert it
-            return itemsInDomain.Select(i => _itemAdapter.Convert<T>(i)).FirstOrDefault();
+            return itemsInDomain.AsParallel().Select(i => _itemAdapter.Convert<T>(i)).FirstOrDefault();
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace Directus.SimpleDb.Providers
             var itemsInDomain = QueryDomain();
 
             // Convert it
-            return itemsInDomain.Select(i => _itemAdapter.Convert<T>(i));
+            return itemsInDomain.AsParallel().Select(i => _itemAdapter.Convert<T>(i));
         }
 
         /// <summary>
@@ -117,6 +117,9 @@ namespace Directus.SimpleDb.Providers
             // Create the put request
             var request = _putFactory.CreateRequest(itemsToSave,this.DomainName);
             
+            // Create the domain if it doesn't exist yet
+            CreateDomain();
+
             // Send off to AWS
             _simpleDB.BatchPutAttributes(request);
         }

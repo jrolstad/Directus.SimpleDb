@@ -44,10 +44,13 @@ namespace Directus.SimpleDb.Adapters
 
             // Set the properties
             SetProperty(item.Name,instance,map.KeyProperty);
-            map.PersistableProperties.Each(p => attributeDictionary
-                                            .Where(a => a.Key == p.Name)
-                                            .Each(a => SetProperty(GetFullValue(a), instance, p))
-                                            );
+            map.PersistableProperties
+                .AsParallel()
+                .Each(p => attributeDictionary
+                               .Where(a => a.Key == p.Name)
+                               .AsParallel()
+                               .Each(a => SetProperty(GetFullValue(a), instance, p))
+                );
 
 
             return instance;

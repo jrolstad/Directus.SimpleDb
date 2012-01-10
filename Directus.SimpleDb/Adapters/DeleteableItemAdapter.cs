@@ -18,6 +18,7 @@ namespace Directus.SimpleDb.Adapters
         public virtual IEnumerable<DeleteableItem> Convert<I>(IEnumerable<I> identifiers)
         {
             return identifiers
+                .AsParallel()
                 .Select(i => new DeleteableItem().WithItemName(i.ToString()));
         }
     }

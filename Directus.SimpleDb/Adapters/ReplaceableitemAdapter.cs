@@ -55,6 +55,7 @@ namespace Directus.SimpleDb.Adapters
         internal ReplaceableAttribute[] GetReplaceableAttributes<T>(T item, EntityMap map)
         {
             return map.PersistableProperties
+                .AsParallel()
                 .SelectMany(p=>Convert(GetPropertyValue(item,p),p.Name))
                 .ToArray();
         }
