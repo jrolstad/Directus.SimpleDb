@@ -22,6 +22,7 @@ namespace Directus.SimpleDb.Providers
         private readonly ItemAdapter _itemAdapter;
 
         private readonly AmazonSimpleDB _simpleDB;
+        private readonly DomainRequestFactory _domainRequestFactory;
         private readonly string _domainName;
 
         /// <summary>
@@ -29,7 +30,7 @@ namespace Directus.SimpleDb.Providers
         /// </summary>
         internal SimpleDBProvider()
         {
-            _domainName = GetDomainNameForType();
+            this._domainName = GetDomainNameForType();
         }
 
         /// <summary>
@@ -44,6 +45,7 @@ namespace Directus.SimpleDb.Providers
             _putFactory = new BatchPutAttributeRequestFactory(new ReplaceableItemAdapter(entityMapper));
             _selectRequestFactory = new SelectRequestFactory();
             _itemAdapter = new ItemAdapter(entityMapper);
+            _domainRequestFactory = new DomainRequestFactory();
             _simpleDB = new AmazonSimpleDBClient(amazonAccessKey,amazonSecretKey);
         }
 
@@ -55,17 +57,28 @@ namespace Directus.SimpleDb.Providers
         /// <param name="selectRequestFactory">Factory for creating select requests</param>
         /// <param name="itemAdapter">Factory for converting select response items to the given POCO of type T</param>
         /// <param name="simpleDb">Amazon SimpleDB instance</param>
+        /// <param name="domainRequestFactory">Factory for domain requests</param>
         public SimpleDBProvider(BatchDeleteAttributeRequestFactory deleteFactory, 
             BatchPutAttributeRequestFactory putFactory, 
             SelectRequestFactory selectRequestFactory, 
             ItemAdapter itemAdapter, 
-            AmazonSimpleDB simpleDb):this()
+            AmazonSimpleDB simpleDb,
+            DomainRequestFactory domainRequestFactory):this()
         {
             _deleteFactory = deleteFactory;
             _putFactory = putFactory;
             _selectRequestFactory = selectRequestFactory;
             _itemAdapter = itemAdapter;
             _simpleDB = simpleDb;
+            _domainRequestFactory = domainRequestFactory;
+        }
+
+        /// <summary>
+        /// Name of the domain for this type
+        /// </summary>
+        public string DomainName
+        {
+            get { return this._domainName; }
         }
 
         /// <summary>
@@ -102,7 +115,7 @@ namespace Directus.SimpleDb.Providers
         public void Save(IEnumerable<T> itemsToSave)
         {
             // Create the put request
-            var request = _putFactory.CreateRequest(itemsToSave,_domainName);
+            var request = _putFactory.CreateRequest(itemsToSave,this.DomainName);
             
             // Send off to AWS
             _simpleDB.BatchPutAttributes(request);
@@ -116,10 +129,20 @@ namespace Directus.SimpleDb.Providers
         {
             // Create the put request
             var identifiers = itemsToDelete.Select(i => i.ToString());
-            var request = _deleteFactory.CreateRequest(identifiers,_domainName);
+            var request = _deleteFactory.CreateRequest(identifiers,this.DomainName);
 
             // Send off to Amazon
             _simpleDB.BatchDeleteAttributes(request);
+        }
+
+        /// <summary>
+        /// Creates the domain for the given type
+        /// </summary>
+        public void CreateDomain()
+        {
+            var request = _domainRequestFactory.Create(this.DomainName);
+
+            _simpleDB.CreateDomain(request);
         }
 
         /// <summary>
@@ -152,7 +175,7 @@ namespace Directus.SimpleDb.Providers
             while (!isComplete)
             {
                 // Setup the select to use the next token if defined
-                var request = _selectRequestFactory.CreateRequest(_domainName, nextToken, identifier);
+                var request = _selectRequestFactory.CreateRequest(this.DomainName, nextToken, identifier);
 
                 // Run the select
                 var response = _simpleDB.Select(request);

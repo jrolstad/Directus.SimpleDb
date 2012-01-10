@@ -58,6 +58,7 @@
     <Compile Include="Attributes\DoNotPersistAttribute.cs" />
     <Compile Include="Factories\BatchDeleteAttributeRequestFactory.cs" />
     <Compile Include="Factories\BatchPutAttributeRequestFactory.cs" />
+    <Compile Include="Factories\DomainRequestFactory.cs" />
     <Compile Include="Factories\SelectRequestFactory.cs" />
     <Compile Include="Attributes\DomainNameAttribute.cs" />
     <Compile Include="Mappers\EntityMap.cs" />
