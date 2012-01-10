@@ -6,6 +6,8 @@ using Directus.SimpleDb.Adapters;
 using Directus.SimpleDb.Attributes;
 using Directus.SimpleDb.Factories;
 using Directus.SimpleDb.Mappers;
+using Rolstad.Extensions;
+using log4net;
 
 namespace Directus.SimpleDb.Providers
 {
@@ -16,6 +18,8 @@ namespace Directus.SimpleDb.Providers
     /// <typeparam name="I">Type of the key identifiers</typeparam>
     public class SimpleDBProvider<T,I> where T : new()
     {
+        private readonly ILog Logger = LogManager.GetLogger(typeof(SimpleDBProvider<T, I>));
+
         private readonly BatchDeleteAttributeRequestFactory _deleteFactory;
         private readonly BatchPutAttributeRequestFactory _putFactory;
         private readonly SelectRequestFactory _selectRequestFactory;
@@ -88,32 +92,42 @@ namespace Directus.SimpleDb.Providers
         /// <returns></returns>
         public T Get(I identifier)
         {
+            if(Logger.IsInfoEnabled) Logger.Info("Querying domain '{0}' for item with name '{1}'".StringFormat(_domainName,identifier));
+
             // Get the data
             var itemsInDomain = QueryDomain(identifier.ToString());
 
             // Convert it
-            return itemsInDomain.AsParallel().Select(i => _itemAdapter.Convert<T>(i)).FirstOrDefault();
+            return itemsInDomain
+                .AsParallel()
+                .Select(i => _itemAdapter.Convert<T>(i)).FirstOrDefault();
         }
 
         /// <summary>
         /// Obtains all instances of the given type
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<T> Get()
+        public ICollection<T> Get()
         {
+            if (Logger.IsInfoEnabled) Logger.Info("Querying domain '{0}' for all items".StringFormat(_domainName));
+
             // Get the data
             var itemsInDomain = QueryDomain();
 
             // Convert it
-            return itemsInDomain.AsParallel().Select(i => _itemAdapter.Convert<T>(i));
+            return itemsInDomain
+                .AsParallel()
+                .Select(i => _itemAdapter.Convert<T>(i)).ToArray();
         }
 
         /// <summary>
         /// Saves all instances in the set
         /// </summary>
         /// <param name="itemsToSave">Instances of the given type to persist</param>
-        public void Save(IEnumerable<T> itemsToSave)
+        public void Save(ICollection<T> itemsToSave)
         {
+            if (Logger.IsInfoEnabled) Logger.Info("Saving {0} items to domain '{1}'".StringFormat(itemsToSave.Count(), _domainName));
+
             // Create the put request
             var request = _putFactory.CreateRequest(itemsToSave,this.DomainName);
             
@@ -128,10 +142,13 @@ namespace Directus.SimpleDb.Providers
         /// Deletes all instances for the given type
         /// </summary>
         /// <param name="itemsToDelete"></param>
-        public void Delete (IEnumerable<I> itemsToDelete)
+        public void Delete(ICollection<I> itemsToDelete)
         {
             // Create the put request
-            var identifiers = itemsToDelete.Select(i => i.ToString());
+            var identifiers = itemsToDelete.Select(i => i.ToString()).ToArray();
+
+            if (Logger.IsInfoEnabled) Logger.Info("Deleting items '{0}' from domain '{1}'".StringFormat(string.Join(",", identifiers), _domainName));
+
             var request = _deleteFactory.CreateRequest(identifiers,this.DomainName);
 
             // Send off to Amazon
@@ -143,6 +160,8 @@ namespace Directus.SimpleDb.Providers
         /// </summary>
         public void CreateDomain()
         {
+            if (Logger.IsInfoEnabled) Logger.Info("Sending request to create domain '{0}' to ensure it exists".StringFormat(_domainName));
+
             var request = _domainRequestFactory.Create(this.DomainName);
 
             _simpleDB.CreateDomain(request);
@@ -160,7 +179,10 @@ namespace Directus.SimpleDb.Providers
             var domainAttribute =  currentType.GetCustomAttributes(typeof(DomainNameAttribute), true).FirstOrDefault() as DomainNameAttribute;
 
             // Return either the defined domain name or the given type name
-            return domainAttribute != null ? domainAttribute.DomainName : domainName;
+            var domainNameForType = domainAttribute != null ? domainAttribute.DomainName : domainName;
+
+            if (Logger.IsInfoEnabled) Logger.Info("Domain name for type resolved as '{0}'".StringFormat(domainNameForType));
+            return domainNameForType;
         }
 
         /// <summary>
