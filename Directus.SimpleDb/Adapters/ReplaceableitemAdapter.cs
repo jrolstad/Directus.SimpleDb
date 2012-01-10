@@ -73,23 +73,34 @@ namespace Directus.SimpleDb.Adapters
             // Split up the string and convert into attributse
             var chunkedValues = Chunk(nullSafeValue,500).ToArray();
 
+            // If everything falls into 1 attribute we're good; lets get out of here
             if(chunkedValues.Length <= 1)
             {
-                return new []{new ReplaceableAttribute().WithName(attributeName).WithValue(nullSafeValue).WithReplace(true)};
+                return new []
+                           {
+                               new ReplaceableAttribute()
+                                   .WithName(attributeName)
+                                   .WithValue(nullSafeValue)
+                                   .WithReplace(true)
+                           };
             }
 
             var attributes = new List<ReplaceableAttribute>();
-            int attributeCount = 0;
+            var attributeCount = 0;
             foreach (var item in chunkedValues)
             {
+                var attributeValue = "[Sort{0}]{1}".StringFormat(attributeCount,item);
+
                 attributes.Add(new ReplaceableAttribute
                                    {
-                                       Name = "{0}|{1}".StringFormat(attributeName, attributeCount), 
-                                       Replace = true, 
-                                       Value = item ?? string.Empty
+                                       Name = attributeName, 
+                                       Replace = false, 
+                                       Value = attributeValue
                                    });
                 attributeCount++;
             }
+
+            attributes.First().WithReplace(true);
 
             return attributes;
         }

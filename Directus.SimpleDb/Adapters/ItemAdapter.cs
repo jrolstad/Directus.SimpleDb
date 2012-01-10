@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Amazon.SimpleDB.Model;
 using Directus.SimpleDb.Mappers;
 using Rolstad.Extensions;
@@ -39,7 +40,7 @@ namespace Directus.SimpleDb.Adapters
             // Obtain the entity map to work with
             var map = _entityMapper.CreateMap<T>();
 
-            var attributeDictionary = item.Attribute.ToLookup(GetAttributeName);
+            var attributeDictionary = item.Attribute.ToLookup(a=>a.Name);
 
             // Set the properties
             SetProperty(item.Name,instance,map.KeyProperty);
@@ -57,20 +58,16 @@ namespace Directus.SimpleDb.Adapters
         /// </summary>
         /// <param name="attributes"></param>
         /// <returns></returns>
-        public static string GetFullValue( IEnumerable<Attribute> attributes)
+        public string GetFullValue( IEnumerable<Attribute> attributes)
         {
             var builder = new StringBuilder();
 
-            attributes.OrderBy(a => a.Name).Each(a => builder.Append(a.Value));
+            var regex = new Regex(@"\[Sort\d\]");
+            attributes.OrderBy(a => a.Value).Each(a => builder.Append(regex.Replace(a.Value,string.Empty,1)));
 
             return builder.ToString();
         }
 
-        private string GetAttributeName(Attribute attribute)
-        {
-            return !attribute.Name.Contains("|") ? attribute.Name : 
-                attribute.Name.Substring(0, attribute.Name.IndexOf("|"));
-        }
 
         /// <summary>
         /// Given a property and instance, sets the value on it

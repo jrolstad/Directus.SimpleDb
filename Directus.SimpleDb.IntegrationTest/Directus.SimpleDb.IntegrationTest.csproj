@@ -59,6 +59,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Entities\TestPOCO.cs" />
+    <Compile Include="Given_the_TestDomain\When_deleting_an_existing_POCO.cs" />
+    <Compile Include="Given_the_TestDomain\When_getting_all_existing_POCOs.cs" />
     <Compile Include="Given_the_TestDomain\When_persisting_an_existing_POCO.cs" />
     <Compile Include="Given_the_TestDomain\When_persisting_a_test_POCO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
