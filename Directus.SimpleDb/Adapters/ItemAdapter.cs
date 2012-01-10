@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Amazon.SimpleDB.Model;
 using Directus.SimpleDb.Mappers;
 using Rolstad.Extensions;
+using Attribute = Amazon.SimpleDB.Model.Attribute;
 
 namespace Directus.SimpleDb.Adapters
 {
@@ -36,15 +39,37 @@ namespace Directus.SimpleDb.Adapters
             // Obtain the entity map to work with
             var map = _entityMapper.CreateMap<T>();
 
+            var attributeDictionary = item.Attribute.ToLookup(GetAttributeName);
+
             // Set the properties
             SetProperty(item.Name,instance,map.KeyProperty);
-            map.PersistableProperties.Each(p => item.Attribute
-                                            .Where(a => a.Name == p.Name)
-                                            .Each(a => SetProperty(a.Value, instance, p))
+            map.PersistableProperties.Each(p => attributeDictionary
+                                            .Where(a => a.Key == p.Name)
+                                            .Each(a => SetProperty(GetFullValue(a), instance, p))
                                             );
 
 
             return instance;
+        }
+
+        /// <summary>
+        /// For a given attribute name, gets the full value
+        /// </summary>
+        /// <param name="attributes"></param>
+        /// <returns></returns>
+        public static string GetFullValue( IEnumerable<Attribute> attributes)
+        {
+            var builder = new StringBuilder();
+
+            attributes.OrderBy(a => a.Name).Each(a => builder.Append(a.Value));
+
+            return builder.ToString();
+        }
+
+        private string GetAttributeName(Attribute attribute)
+        {
+            return !attribute.Name.Contains("|") ? attribute.Name : 
+                attribute.Name.Substring(0, attribute.Name.IndexOf("|"));
         }
 
         /// <summary>
@@ -71,8 +96,8 @@ namespace Directus.SimpleDb.Adapters
         /// <summary>
         /// Converts a string type to the defined type.  If <see langword="null"/> or empty, returns that type's default
         /// </summary>
-        /// <typeparam name="T">Type to convert to</typeparam>
         /// <param name="value">Value to convert</param>
+        /// <param name="type">Type to convert the value to</param>
         /// <returns></returns>
         public static object To(string value, Type type)
         {

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Text;
 using Directus.SimpleDb.IntegrationTest.Entities;
@@ -12,7 +11,7 @@ using Rolstad.Extensions;
 namespace Directus.SimpleDb.IntegrationTest.Given_the_TestDomain
 {
     [TestFixture]
-    public class When_persisting_a_test_POCO
+    public class When_persisting_an_existing_POCO
     {
         private TestPOCO _originalEntity;
         private TestPOCO _retrievedEntity;
@@ -21,7 +20,7 @@ namespace Directus.SimpleDb.IntegrationTest.Given_the_TestDomain
         public void BeforeAll()
         {
             // Arrange
-            var provider = new SimpleDBProvider<TestPOCO, string>(Settings.Default.AmazonAccessKey,Settings.Default.AmazonSecretKey);
+            var provider = new SimpleDBProvider<TestPOCO, string>(Settings.Default.AmazonAccessKey, Settings.Default.AmazonSecretKey);
 
             _originalEntity = Builder<TestPOCO>.CreateNew().Build();
             _originalEntity.Identifier = Guid.NewGuid().ToString();
@@ -29,6 +28,13 @@ namespace Directus.SimpleDb.IntegrationTest.Given_the_TestDomain
             var stringBuilder = new StringBuilder();
             Enumerable.Range(0, 100).Each(i=>stringBuilder.Append(Guid.NewGuid().ToString()));
             _originalEntity.VerLongStringValue = stringBuilder.ToString();
+
+            /* Save it the first time */
+            provider.Save(new[] { _originalEntity });
+
+            /* Now Update */
+            _originalEntity.DateTimeValue = DateTime.Today.AddDays(3);
+            _originalEntity.VerLongStringValue = "One two";
 
             // Act
             provider.Save(new[]{_originalEntity});

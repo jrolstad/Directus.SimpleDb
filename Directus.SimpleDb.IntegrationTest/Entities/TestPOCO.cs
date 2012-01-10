@@ -17,6 +17,8 @@ namespace Directus.SimpleDb.IntegrationTest.Entities
 
         public string StringValue { get; set; }
 
+        public string VerLongStringValue { get; set; }
+
         public bool BoolValue { get; set; }
 
         public int IntegerValue { get; set; }

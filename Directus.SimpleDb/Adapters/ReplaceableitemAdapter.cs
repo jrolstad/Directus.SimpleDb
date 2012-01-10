@@ -1,7 +1,10 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Amazon.SimpleDB.Model;
 using Directus.SimpleDb.Mappers;
+using Rolstad.Extensions;
 
 namespace Directus.SimpleDb.Adapters
 {
@@ -52,11 +55,65 @@ namespace Directus.SimpleDb.Adapters
         internal ReplaceableAttribute[] GetReplaceableAttributes<T>(T item, EntityMap map)
         {
             return map.PersistableProperties
-                .Select(p=>new ReplaceableAttribute()
-                    .WithName(p.Name)
-                    .WithValue(GetPropertyValue(item, p))
-                    .WithReplace(true))
+                .SelectMany(p=>Convert(GetPropertyValue(item,p),p.Name))
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Converts a string into an enumeration of replaceable attributes
+        /// </summary>
+        /// <param name="value">Value to convert</param>
+        /// <param name="attributeName">name of the attribute</param>
+        /// <returns></returns>
+        private IEnumerable<ReplaceableAttribute> Convert(string value, string attributeName)
+        {
+            // Ensure nulls are converted to empty
+            var nullSafeValue = value ?? string.Empty;
+
+            // Split up the string and convert into attributse
+            var chunkedValues = Chunk(nullSafeValue,500).ToArray();
+
+            if(chunkedValues.Length <= 1)
+            {
+                return new []{new ReplaceableAttribute().WithName(attributeName).WithValue(nullSafeValue).WithReplace(true)};
+            }
+
+            var attributes = new List<ReplaceableAttribute>();
+            int attributeCount = 0;
+            foreach (var item in chunkedValues)
+            {
+                attributes.Add(new ReplaceableAttribute
+                                   {
+                                       Name = "{0}|{1}".StringFormat(attributeName, attributeCount), 
+                                       Replace = true, 
+                                       Value = item ?? string.Empty
+                                   });
+                attributeCount++;
+            }
+
+            return attributes;
+        }
+
+        /// <summary>
+        /// Chunks a string up into an enumeration of strings
+        /// </summary>
+        /// <param name="stringToChunk">String being chunked</param>
+        /// <param name="chunkSize">Size of the chunks</param>
+        /// <returns></returns>
+        private IEnumerable<string> Chunk (string stringToChunk, int chunkSize)
+        {
+            if (stringToChunk.IsEmpty())
+            {
+                yield return string.Empty;
+            }
+            else
+            {
+                for (int offset = 0; offset < stringToChunk.Length; offset += chunkSize)
+                {
+                    int size = Math.Min(chunkSize, stringToChunk.Length - offset);
+                    yield return stringToChunk.Substring(offset, size);
+                }
+            }
         }
 
         /// <summary>
@@ -72,6 +129,5 @@ namespace Directus.SimpleDb.Adapters
 
             return value == null ? null : value.ToString();
         }
- 
     }
 }
